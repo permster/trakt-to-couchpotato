@@ -8,7 +8,7 @@ Features include:
 * Ability to manage seperate Trakt movie lists
 * Automatic creation of Trakt lists based on Couch Potato category names
 * Movies added into Couch Potato with the proper category set
-* Once movies are added to Couch Potato they are moved "_archive" Trakt list for historical data.
+* Once movies are added to Couch Potato they are moved into an "_archive" Trakt list for historical data.
 
 ## Dependencies
 
