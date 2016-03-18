@@ -33,6 +33,7 @@ cp_apikey = ''
 pb_token = ''
 movies_added = []
 err_count = 0
+pb_url = 'https://api.pushbullet.com/v2/pushes'
 pb_msg = ''
 cp_urls = {
     'base': 'http://localhost:5050/api/',
@@ -40,9 +41,6 @@ cp_urls = {
     'category_list': '{0}/category.list/',
     'movie_add': '{0}/movie.add/?identifier={1}&category_id={2}'
 }
-
-if __debug__:
-    cp_urls['base'] = 'http://192.168.0.1:5050/api/' #if debugging remotely set to IP of CP server
 
 trakt_urls = {
     'base': 'https://api-v2launch.trakt.tv/',
@@ -143,6 +141,7 @@ def istrakttokenexpired(url_path):
 
     # need to provide this using auth response
     request.add_header("Authorization", "Bearer {0}".format(trakt_accesstoken))
+    logger.debug('Request headers: {0}'.format(request.headers))
 
     try:
         urllib2.urlopen(request)
@@ -157,12 +156,15 @@ def istrakttokenexpired(url_path):
     except urllib2.URLError, err:
         logger.exception('urllib2 url error reason : {0}'.format(err.reason))
         return
+    finally:
+            logger.debug('Request headers: {0}'.format(request.headers))
 
 
 def refreshtrakttoken(url_path, post_data):
     url = None
     logger.info('Refreshing Trakt.TV access token')
     logger.info('HTTP request: {0}'.format(url_path))
+    logger.debug('Post data: {0}'.format(post_data))
 
     try:
         request = urllib2.Request(url_path)
@@ -199,11 +201,13 @@ def getsettraktdata(url_path, post_data=None):
 
     # need to provide this using auth response
     request.add_header("Authorization", "Bearer {0}".format(trakt_accesstoken))
+    logger.debug('Request headers: {0}'.format(request.headers))
 
     try:
         if post_data is None:
             url = urllib2.urlopen(request)
         else:
+            logger.debug('Post data: {0}'.format(post_data))
             url = urllib2.urlopen(request, json.dumps(post_data))
     except urllib2.HTTPError, err:
         logger.exception('urllib2 http error code : {0}'.format(err.code))
@@ -283,11 +287,14 @@ def gettraktslug(url, listname):
 
 
 def pushbullet_push(message=''):
+    if pb_token is None:
+        return
+
     url = None
     logger.info('Sending Pushbullet notification.')
     logger.info('Message body: {0}'.format(message))
 
-    request = 'https://api.pushbullet.com/v2/pushes'
+    request = pb_url
     logger.info('HTTP request: {0}'.format(request))
 
     post_data = {'type': 'note',
@@ -299,6 +306,7 @@ def pushbullet_push(message=''):
         request = urllib2.Request(request)
         request.add_header("Content-Type", "application/json")
         request.add_header("Authorization", "Bearer {0}".format(pb_token))
+        logger.debug('Request headers: {0}\nPost data: {1}'.format(request.headers, post_data))
         url = urllib2.urlopen(request, json.dumps(post_data))
     except urllib2.HTTPError, err:
         if err.code == 404:
@@ -361,7 +369,10 @@ if __name__ == "__main__":
 
     # create logging object
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    if __debug__:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     # create a file handler
     if args.log is not None and len(args.log) > 0:
@@ -371,7 +382,10 @@ if __name__ == "__main__":
         logfile = '{0}//{1}.log'.format(os.path.dirname(os.path.realpath(__file__)),
                                         os.path.splitext(os.path.basename(__file__))[0])
     handler = logging.FileHandler(logfile)
-    handler.setLevel(logging.INFO)
+    if __debug__:
+        handler.setLevel(logging.DEBUG)
+    else:
+        handler.setLevel(logging.INFO)
 
     # create a logging format
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -379,6 +393,11 @@ if __name__ == "__main__":
 
     # add the handlers to the logger
     logger.addHandler(handler)
+
+    if __debug__:
+        logger.info('Debug logging enabled')
+    else:
+        logger.info('Debug logging disabled')
 
     # read config file
     filepath = '{0}//config.ini'.format(os.path.dirname(os.path.realpath(__file__)))
@@ -411,11 +430,15 @@ if __name__ == "__main__":
         if config.has_section('couchpotato'):
             if config.has_option('couchpotato', 'apikey'):
                 cp_apikey = config.get('couchpotato', 'apikey')
+            if config.has_option('couchpotato', 'apiurl'):
+                cp_urls['base'] = config.get('couchpotato', 'apiurl')  # hard code the url of CP server api
 
         # pushbullet settings
         if config.has_section('pushbullet'):
             if config.has_option('pushbullet', 'token'):
                 pb_token = config.get('pushbullet', 'token')
+            if config.has_option('pushbullet', 'apiurl'):
+                pb_url = config.get('pushbullet', 'apiurl')
     else:
         _Exit(1, 'Unable to parse config file!')
 
@@ -590,7 +613,7 @@ if __name__ == "__main__":
             'movies': [
                 {
                     'ids': {
-                        'imdb': movie['imdb_id']
+                        'imdb': str(movie['imdb_id'])
                     }
                 }
             ]
@@ -604,6 +627,7 @@ if __name__ == "__main__":
                 logger.info('Success, the movie has been removed')
             else:
                 err_count += 1
+                logger.debug('Error, {0}'.format(trakt_result))
                 logger.error('Error, unable to remove the movie.')
                 del movies[movies.index(movie)]
                 pb_msg = '{0}\nUnable to remove {1} from the Trakt list (slug) "{2}"\n'.format(pb_msg, movie['title'],
