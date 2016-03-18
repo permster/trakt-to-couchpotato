@@ -5,14 +5,14 @@ trakt-to-couchpotato is a simple Python script aimed at adding Trakt custom list
 
 ## Usage:
 Before running be sure to edit the config.ini file with your specific information.
-Trakt client id
-Trakt client secret
-Trakt access token
-Trakt refresh token
-Couch Potato url (optional) (default - http://localhost:5050/api)
-Couch Potato API key
-Pushbullet url (optional) (default - https://api.pushbullet.com/v2/pushes)
-Pushbullet token (optional)
+* Trakt client id
+* Trakt client secret
+* Trakt access token
+* Trakt refresh token
+* Couch Potato url (optional) (default - http://localhost:5050/api)
+* Couch Potato API key
+* Pushbullet url (optional) (default - https://api.pushbullet.com/v2/pushes)
+* Pushbullet token (optional)
 
 After the config file is configured be sure to create your custom categories in Couch Potato.  For this example let's create a category named "Kids" and set a different "To" folder on the renamer options screen for the newly created category.
 
