@@ -28,6 +28,7 @@ Features include:
 * Movies added into Couch Potato with the proper category set.
 * Once movies are added to Couch Potato they are moved into an "_archive" Trakt list for historical data.
 * Optional PushBullet support for notifications.
+* Optional -log switch to specify a log file path. (defaults to script directory if not specified)
 
 ## Dependencies
 
